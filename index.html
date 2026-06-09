@@ -1,0 +1,1113 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#fff3f7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Mellow Log">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <link rel="manifest" href="./manifest.webmanifest">
+  <title>Mellow Log</title>
+  <style>
+    :root {
+      color-scheme: light;
+      --bg: #fff3f7;
+      --paper: #ffffff;
+      --paper-2: #f1faf7;
+      --ink: #2e2930;
+      --muted: #7b7078;
+      --line: #eadfe5;
+      --accent: #ef7e75;
+      --accent-2: #6fb7a8;
+      --accent-3: #b89ae8;
+      --bad: #8b6a9f;
+      --shadow: 0 14px 34px rgba(75, 47, 68, .12);
+    }
+
+    [data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #181418;
+      --paper: #242026;
+      --paper-2: #2b3130;
+      --ink: #f7eef4;
+      --muted: #c6b7c1;
+      --line: #463b44;
+      --accent: #ff9c93;
+      --accent-2: #82d0c0;
+      --accent-3: #f4c36e;
+      --bad: #c9a4dc;
+      --shadow: 0 16px 38px rgba(0, 0, 0, .3);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background:
+        radial-gradient(circle at 18% -8%, rgba(239,126,117,.16), transparent 28rem),
+        radial-gradient(circle at 92% 12%, rgba(111,183,168,.14), transparent 24rem),
+        linear-gradient(180deg, var(--bg), var(--paper-2));
+      color: var(--ink);
+      font-family: -apple-system, BlinkMacSystemFont, "Hiragino Sans", "Yu Gothic", sans-serif;
+      letter-spacing: 0;
+    }
+
+    button, input, textarea, select {
+      font: inherit;
+      color: inherit;
+    }
+
+    button {
+      border: 0;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .app {
+      width: min(100%, 460px);
+      min-height: 100vh;
+      margin: 0 auto;
+      padding: max(16px, env(safe-area-inset-top)) 16px calc(86px + env(safe-area-inset-bottom));
+    }
+
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 4px 2px 14px;
+    }
+
+    h1, h2, h3, p { margin: 0; }
+
+    h1 {
+      font-size: 28px;
+      line-height: 1.05;
+      letter-spacing: 0;
+    }
+
+    .date-pill {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--muted);
+      font-size: 13px;
+      margin-top: 6px;
+    }
+
+    .icon-btn {
+      width: 44px;
+      height: 44px;
+      border-radius: 999px;
+      background: var(--paper);
+      box-shadow: var(--shadow);
+      display: grid;
+      place-items: center;
+      font-size: 20px;
+    }
+
+    .screen { display: none; }
+    .screen.active { display: block; }
+
+    .panel {
+      background: color-mix(in srgb, var(--paper) 94%, transparent);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+
+    .section-title {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+
+    .section-title h2 {
+      font-size: 16px;
+      line-height: 1.25;
+    }
+
+    .hint, .mini {
+      color: var(--muted);
+      font-size: 12px;
+      line-height: 1.45;
+    }
+
+    .moods {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 8px;
+    }
+
+    .mood {
+      min-height: 78px;
+      border-radius: 8px;
+      background: var(--paper-2);
+      border: 2px solid transparent;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: transform .15s ease, border-color .15s ease;
+    }
+
+    .mood span:first-child { font-size: 26px; }
+    .mood span:last-child { font-size: 10px; color: var(--muted); }
+    .mood.selected {
+      border-color: var(--accent);
+      background: color-mix(in srgb, var(--accent) 15%, var(--paper));
+      transform: translateY(-2px);
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      min-height: 38px;
+      border-radius: 999px;
+      padding: 8px 12px;
+      background: var(--paper-2);
+      border: 1px solid var(--line);
+      font-size: 14px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .chip.selected {
+      color: #201613;
+      border-color: color-mix(in srgb, var(--accent) 70%, var(--line));
+      background: color-mix(in srgb, var(--accent) 28%, white);
+    }
+
+    [data-theme="dark"] .chip.selected { color: var(--ink); }
+
+    .field {
+      width: 100%;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      border-radius: 8px;
+      padding: 12px;
+      outline: 0;
+    }
+
+    textarea.field {
+      min-height: 92px;
+      resize: vertical;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .run-card {
+      display: none;
+      border-top: 1px dashed var(--line);
+      margin-top: 14px;
+      padding-top: 14px;
+    }
+
+    .run-card.active { display: block; }
+
+    .primary {
+      width: 100%;
+      min-height: 52px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, var(--accent), #f5a15d);
+      color: #fff;
+      font-weight: 700;
+      box-shadow: 0 12px 24px rgba(239,126,117,.3);
+    }
+
+    .secondary {
+      min-height: 40px;
+      border-radius: 999px;
+      padding: 8px 14px;
+      border: 1px solid var(--line);
+      background: var(--paper);
+      color: var(--ink);
+    }
+
+    .photo-preview {
+      display: none;
+      width: 100%;
+      aspect-ratio: 4 / 3;
+      object-fit: cover;
+      border-radius: 8px;
+      margin-top: 10px;
+      border: 1px solid var(--line);
+    }
+
+    .photo-preview.active { display: block; }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+
+    .stat {
+      background: var(--paper-2);
+      border-radius: 8px;
+      padding: 12px 8px;
+      text-align: center;
+      min-height: 78px;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    .stat strong { font-size: 22px; }
+
+    canvas {
+      width: 100%;
+      height: 190px;
+      background: var(--paper);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+
+    .segmented {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 5px;
+      background: var(--paper-2);
+      border-radius: 999px;
+      padding: 5px;
+    }
+
+    .segmented button {
+      min-height: 34px;
+      border-radius: 999px;
+      background: transparent;
+      color: var(--muted);
+      font-size: 13px;
+    }
+
+    .segmented button.active {
+      background: var(--paper);
+      color: var(--ink);
+      box-shadow: 0 5px 14px rgba(0, 0, 0, .08);
+    }
+
+    .insights {
+      display: grid;
+      gap: 8px;
+    }
+
+    .insight {
+      padding: 12px;
+      border-radius: 8px;
+      background: var(--paper-2);
+      border-left: 4px solid var(--accent-2);
+      line-height: 1.5;
+      font-size: 13px;
+    }
+
+    .calendar-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 5px;
+    }
+
+    .dow {
+      color: var(--muted);
+      text-align: center;
+      font-size: 11px;
+      padding-bottom: 4px;
+    }
+
+    .day {
+      min-height: 48px;
+      border-radius: 8px;
+      background: var(--paper-2);
+      border: 1px solid transparent;
+      padding: 5px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11px;
+    }
+
+    .day.has { border-color: var(--line); background: var(--paper); }
+    .day.today { border-color: var(--accent); }
+    .day .emoji { font-size: 18px; line-height: 1; }
+    .day.blank { visibility: hidden; }
+
+    .detail {
+      display: none;
+      margin-top: 12px;
+      line-height: 1.55;
+    }
+
+    .detail.active { display: block; }
+
+    .entry-photo {
+      width: 100%;
+      border-radius: 8px;
+      margin-top: 10px;
+      border: 1px solid var(--line);
+    }
+
+    .activity-row {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 8px;
+    }
+
+    .bottom-nav {
+      position: fixed;
+      left: 50%;
+      bottom: 0;
+      transform: translateX(-50%);
+      width: min(100%, 460px);
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+      padding: 8px 12px calc(8px + env(safe-area-inset-bottom));
+      background: color-mix(in srgb, var(--paper) 92%, transparent);
+      border-top: 1px solid var(--line);
+      backdrop-filter: blur(18px);
+      z-index: 10;
+    }
+
+    .nav-btn {
+      min-height: 54px;
+      border-radius: 8px;
+      background: transparent;
+      color: var(--muted);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 3px;
+      font-size: 11px;
+    }
+
+    .nav-btn .nav-ico { font-size: 20px; }
+    .nav-btn.active {
+      color: var(--ink);
+      background: var(--paper-2);
+    }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: calc(82px + env(safe-area-inset-bottom));
+      transform: translateX(-50%) translateY(20px);
+      width: min(88%, 390px);
+      padding: 12px 14px;
+      background: #302a28;
+      color: #fff;
+      border-radius: 999px;
+      text-align: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: .2s ease;
+      z-index: 20;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    @media (max-width: 360px) {
+      .app { padding-left: 12px; padding-right: 12px; }
+      .mood { min-height: 72px; }
+      .mood span:last-child { font-size: 9px; }
+      .chip { font-size: 13px; padding: 8px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header>
+      <div>
+        <h1>Mellow Log</h1>
+        <div class="date-pill"><span>今日</span><strong id="todayLabel"></strong></div>
+      </div>
+      <button class="icon-btn" id="themeBtn" type="button" aria-label="テーマ切替">☾</button>
+    </header>
+
+    <section class="screen active" id="screen-log">
+      <div class="panel">
+        <div class="section-title">
+          <h2>気分</h2>
+          <p class="hint">1タップ</p>
+        </div>
+        <div class="moods" id="moodButtons"></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">
+          <h2>活動</h2>
+          <button class="secondary" id="quickAddActivity" type="button">追加</button>
+        </div>
+        <div class="chips" id="activityChips"></div>
+        <div class="run-card" id="runFields">
+          <div class="section-title">
+            <h2>ランニング</h2>
+            <p class="hint">選択時のみ</p>
+          </div>
+          <div class="grid-2">
+            <input class="field" id="runDistance" type="number" min="0" step="0.1" placeholder="距離 km">
+            <input class="field" id="runTime" type="number" min="0" step="1" placeholder="時間 分">
+          </div>
+          <div style="height:10px"></div>
+          <select class="field" id="runCondition">
+            <option value="">走った時の調子</option>
+            <option>絶好調</option>
+            <option>良い</option>
+            <option>普通</option>
+            <option>イマイチ</option>
+            <option>かなりきつい</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">
+          <h2>体調</h2>
+          <p class="hint">複数選択</p>
+        </div>
+        <div class="chips" id="conditionChips"></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title"><h2>メモ・写真</h2></div>
+        <textarea class="field" id="memo" placeholder="今日のことを少しだけ"></textarea>
+        <div style="height:10px"></div>
+        <input class="field" id="photoInput" type="file" accept="image/*">
+        <img class="photo-preview" id="photoPreview" alt="添付写真プレビュー">
+      </div>
+
+      <button class="primary" id="saveBtn" type="button">今日を保存</button>
+    </section>
+
+    <section class="screen" id="screen-analysis">
+      <div class="panel">
+        <div class="section-title">
+          <h2>分析</h2>
+          <div class="segmented" style="width:174px">
+            <button class="active" data-range="week" type="button">週</button>
+            <button data-range="month" type="button">月</button>
+            <button data-range="year" type="button">年</button>
+          </div>
+        </div>
+        <div class="stats">
+          <div class="stat"><span class="mini">記録日</span><strong id="statDays">0</strong></div>
+          <div class="stat"><span class="mini">平均気分</span><strong id="statMood">-</strong></div>
+          <div class="stat"><span class="mini">走行距離</span><strong id="statRun">0</strong></div>
+        </div>
+        <div style="height:12px"></div>
+        <canvas id="moodChart" width="760" height="380" aria-label="気分推移グラフ"></canvas>
+      </div>
+
+      <div class="panel">
+        <div class="section-title"><h2>関連分析</h2></div>
+        <div class="insights" id="insights"></div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title">
+          <h2>AI月次サマリー</h2>
+          <button class="secondary" id="summaryBtn" type="button">作成</button>
+        </div>
+        <div class="insight" id="summaryBox">今月の記録がたまると、傾向をやさしくまとめます。</div>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-calendar">
+      <div class="panel">
+        <div class="calendar-head">
+          <button class="icon-btn" id="prevMonth" type="button" aria-label="前月">‹</button>
+          <h2 id="calendarTitle"></h2>
+          <button class="icon-btn" id="nextMonth" type="button" aria-label="翌月">›</button>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+        <div class="detail panel" id="dayDetail"></div>
+      </div>
+    </section>
+
+    <section class="screen" id="screen-settings">
+      <div class="panel">
+        <div class="section-title"><h2>活動を編集</h2></div>
+        <div id="activityEditor"></div>
+        <div class="activity-row">
+          <input class="field" id="newActivityName" placeholder="新しい活動名">
+          <button class="secondary" id="addActivityBtn" type="button">追加</button>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="section-title"><h2>データ管理</h2></div>
+        <div class="chips">
+          <button class="chip" id="exportCsv" type="button">CSVエクスポート</button>
+          <button class="chip" id="exportJson" type="button">iCloud用バックアップ</button>
+          <label class="chip" for="importFile">インポート</label>
+          <input id="importFile" type="file" accept=".json,.csv,text/csv,application/json" hidden>
+        </div>
+        <p class="hint" style="margin-top:10px">バックアップファイルはiCloud Driveに保存しておくと、別端末への移行に使えます。</p>
+      </div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav" aria-label="メイン">
+    <button class="nav-btn active" data-screen="log" type="button"><span class="nav-ico">＋</span><span>記録</span></button>
+    <button class="nav-btn" data-screen="analysis" type="button"><span class="nav-ico">⌁</span><span>分析</span></button>
+    <button class="nav-btn" data-screen="calendar" type="button"><span class="nav-ico">□</span><span>カレンダー</span></button>
+    <button class="nav-btn" data-screen="settings" type="button"><span class="nav-ico">⚙</span><span>設定</span></button>
+  </nav>
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = "mellow-log-v1";
+    const moodScale = [
+      { value: 5, label: "とても良い", emoji: "☀️" },
+      { value: 4, label: "良い", emoji: "🌷" },
+      { value: 3, label: "普通", emoji: "🌿" },
+      { value: 2, label: "悪い", emoji: "☁️" },
+      { value: 1, label: "とても悪い", emoji: "🌧️" }
+    ];
+    const defaultActivities = ["仕事","家事","育児","買い物","散歩","運動","ランニング","勉強","趣味","外食","旅行","友人","睡眠不足","飲酒","病院"];
+    const conditions = ["元気","疲労","頭痛","腹痛","肩こり","腰痛","風邪気味","アレルギー"];
+    const state = loadState();
+    const today = toDateKey(new Date());
+    let draft = state.entries[today] || freshEntry();
+    let analysisRange = "week";
+    let calendarCursor = new Date();
+
+    function freshEntry() {
+      return { date: today, mood: 3, activities: [], conditions: [], memo: "", photo: "", run: null };
+    }
+
+    function loadState() {
+      const fallback = { activities: defaultActivities, entries: {}, theme: "light" };
+      try {
+        const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+        if (!saved) return fallback;
+        return {
+          activities: [...new Set([...(saved.activities || defaultActivities)])],
+          entries: saved.entries || {},
+          theme: saved.theme || "light"
+        };
+      } catch {
+        return fallback;
+      }
+    }
+
+    function persist() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    }
+
+    function toDateKey(date) {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, "0");
+      const d = String(date.getDate()).padStart(2, "0");
+      return `${y}-${m}-${d}`;
+    }
+
+    function parseDate(key) {
+      const [y, m, d] = key.split("-").map(Number);
+      return new Date(y, m - 1, d);
+    }
+
+    function moodMeta(value) {
+      return moodScale.find(m => m.value === Number(value)) || moodScale[2];
+    }
+
+    function showToast(message) {
+      const toast = document.getElementById("toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(showToast.timer);
+      showToast.timer = setTimeout(() => toast.classList.remove("show"), 1800);
+    }
+
+    function renderAll() {
+      document.documentElement.dataset.theme = state.theme;
+      document.getElementById("themeBtn").textContent = state.theme === "dark" ? "☀" : "☾";
+      document.getElementById("todayLabel").textContent = new Intl.DateTimeFormat("ja-JP", { month: "long", day: "numeric", weekday: "short" }).format(new Date());
+      renderMoodButtons();
+      renderActivityChips();
+      renderConditionChips();
+      renderDraftFields();
+      renderAnalysis();
+      renderCalendar();
+      renderActivityEditor();
+    }
+
+    function renderMoodButtons() {
+      document.getElementById("moodButtons").innerHTML = moodScale.map(m => `
+        <button class="mood ${draft.mood === m.value ? "selected" : ""}" data-mood="${m.value}" type="button">
+          <span>${m.emoji}</span><span>${m.label}</span>
+        </button>
+      `).join("");
+    }
+
+    function chipButton(name, selected, kind) {
+      return `<button class="chip ${selected ? "selected" : ""}" data-${kind}="${name}" type="button">${selected ? "✓" : "+"} ${name}</button>`;
+    }
+
+    function renderActivityChips() {
+      document.getElementById("activityChips").innerHTML = state.activities.map(name => chipButton(name, draft.activities.includes(name), "activity")).join("");
+      document.getElementById("runFields").classList.toggle("active", draft.activities.includes("ランニング"));
+    }
+
+    function renderConditionChips() {
+      document.getElementById("conditionChips").innerHTML = conditions.map(name => chipButton(name, draft.conditions.includes(name), "condition")).join("");
+    }
+
+    function renderDraftFields() {
+      document.getElementById("memo").value = draft.memo || "";
+      document.getElementById("runDistance").value = draft.run?.distance || "";
+      document.getElementById("runTime").value = draft.run?.time || "";
+      document.getElementById("runCondition").value = draft.run?.condition || "";
+      const preview = document.getElementById("photoPreview");
+      preview.src = draft.photo || "";
+      preview.classList.toggle("active", Boolean(draft.photo));
+    }
+
+    function renderActivityEditor() {
+      document.getElementById("activityEditor").innerHTML = state.activities.map((name, index) => `
+        <div class="activity-row">
+          <input class="field activity-name" data-index="${index}" value="${escapeHtml(name)}">
+          <button class="secondary delete-activity" data-index="${index}" type="button">削除</button>
+        </div>
+      `).join("");
+    }
+
+    function entriesForRange(range) {
+      const now = new Date();
+      const start = new Date(now);
+      if (range === "week") start.setDate(now.getDate() - 6);
+      if (range === "month") start.setMonth(now.getMonth() - 1);
+      if (range === "year") start.setFullYear(now.getFullYear() - 1);
+      return Object.values(state.entries)
+        .filter(e => parseDate(e.date) >= start && parseDate(e.date) <= now)
+        .sort((a, b) => a.date.localeCompare(b.date));
+    }
+
+    function renderAnalysis() {
+      const entries = entriesForRange(analysisRange);
+      const avg = average(entries.map(e => e.mood));
+      const runDistance = entries.reduce((sum, e) => sum + Number(e.run?.distance || 0), 0);
+      document.getElementById("statDays").textContent = entries.length;
+      document.getElementById("statMood").textContent = avg ? avg.toFixed(1) : "-";
+      document.getElementById("statRun").textContent = `${runDistance.toFixed(1)}km`;
+      drawMoodChart(entries);
+      renderInsights(entries);
+    }
+
+    function average(values) {
+      const nums = values.map(Number).filter(n => !Number.isNaN(n));
+      return nums.length ? nums.reduce((a, b) => a + b, 0) / nums.length : 0;
+    }
+
+    function drawMoodChart(entries) {
+      const canvas = document.getElementById("moodChart");
+      const ctx = canvas.getContext("2d");
+      const w = canvas.width;
+      const h = canvas.height;
+      ctx.clearRect(0, 0, w, h);
+      ctx.fillStyle = getCss("--paper");
+      ctx.fillRect(0, 0, w, h);
+      ctx.strokeStyle = getCss("--line");
+      ctx.lineWidth = 2;
+      for (let i = 1; i <= 5; i++) {
+        const y = h - 42 - ((i - 1) / 4) * (h - 86);
+        ctx.beginPath();
+        ctx.moveTo(42, y);
+        ctx.lineTo(w - 24, y);
+        ctx.stroke();
+        ctx.fillStyle = getCss("--muted");
+        ctx.font = "22px -apple-system";
+        ctx.fillText(String(i), 16, y + 7);
+      }
+      if (!entries.length) {
+        ctx.fillStyle = getCss("--muted");
+        ctx.font = "26px -apple-system";
+        ctx.fillText("記録するとグラフが表示されます", 160, h / 2);
+        return;
+      }
+      const points = entries.map((e, i) => {
+        const x = entries.length === 1 ? w / 2 : 52 + i * ((w - 88) / (entries.length - 1));
+        const y = h - 42 - ((Number(e.mood) - 1) / 4) * (h - 86);
+        return { x, y };
+      });
+      ctx.strokeStyle = getCss("--accent");
+      ctx.lineWidth = 5;
+      ctx.lineCap = "round";
+      ctx.lineJoin = "round";
+      ctx.beginPath();
+      points.forEach((p, i) => i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y));
+      ctx.stroke();
+      points.forEach((p, i) => {
+        ctx.fillStyle = i === points.length - 1 ? getCss("--accent-3") : getCss("--accent-2");
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, 9, 0, Math.PI * 2);
+        ctx.fill();
+      });
+    }
+
+    function getCss(name) {
+      return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    }
+
+    function renderInsights(entries) {
+      const insights = [];
+      const allAvg = average(entries.map(e => e.mood));
+      const activityStats = state.activities.map(name => {
+        const hit = entries.filter(e => e.activities?.includes(name));
+        return { name, count: hit.length, avg: average(hit.map(e => e.mood)) };
+      }).filter(s => s.count >= 1 && allAvg);
+      const exercise = activityStats.find(s => s.name === "運動") || activityStats.find(s => s.name === "ランニング");
+      if (exercise && exercise.avg > allAvg) {
+        const pct = Math.round(((exercise.avg - allAvg) / allAvg) * 100);
+        insights.push(`${exercise.name}した日の気分スコアは平均より${pct}%高い傾向があります。`);
+      }
+      const sleep = activityStats.find(s => s.name === "睡眠不足");
+      if (sleep && sleep.avg < allAvg) insights.push("睡眠不足の日は気分が低下する傾向があります。休息の予定を先に置くとよさそうです。");
+      const running = entries.filter(e => e.activities?.includes("ランニング"));
+      if (running.length) {
+        const runAvg = average(running.map(e => e.mood));
+        insights.push(`ランニング実施回数は${running.length}回、平均気分は${runAvg.toFixed(1)}です。走った日は気分が${runAvg >= allAvg ? "高め" : "落ち着きにくい"}傾向があります。`);
+      }
+      const conditionHit = ["疲労","頭痛","腹痛","肩こり","腰痛"].find(c => entries.filter(e => e.conditions?.includes(c)).length >= 1);
+      if (conditionHit) {
+        const related = topRelatedActivity(entries, conditionHit);
+        if (related) insights.push(`${conditionHit}の日は「${related}」も一緒に記録されやすいです。予定量の見直しに使えます。`);
+      }
+      if (!insights.length) insights.push("もう少し記録が増えると、活動・体調・気分のつながりを表示します。");
+      document.getElementById("insights").innerHTML = insights.map(text => `<div class="insight">${text}</div>`).join("");
+    }
+
+    function topRelatedActivity(entries, condition) {
+      const counts = new Map();
+      entries.filter(e => e.conditions?.includes(condition)).forEach(e => {
+        (e.activities || []).forEach(a => counts.set(a, (counts.get(a) || 0) + 1));
+      });
+      return [...counts.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+    }
+
+    function renderCalendar() {
+      const y = calendarCursor.getFullYear();
+      const m = calendarCursor.getMonth();
+      document.getElementById("calendarTitle").textContent = `${y}年${m + 1}月`;
+      const first = new Date(y, m, 1);
+      const last = new Date(y, m + 1, 0);
+      const cells = ["日","月","火","水","木","金","土"].map(d => `<div class="dow">${d}</div>`);
+      for (let i = 0; i < first.getDay(); i++) cells.push('<button class="day blank" type="button"></button>');
+      for (let day = 1; day <= last.getDate(); day++) {
+        const key = toDateKey(new Date(y, m, day));
+        const entry = state.entries[key];
+        cells.push(`
+          <button class="day ${entry ? "has" : ""} ${key === today ? "today" : ""}" data-date="${key}" type="button">
+            <span>${day}</span><span class="emoji">${entry ? moodMeta(entry.mood).emoji : ""}</span>
+          </button>
+        `);
+      }
+      document.getElementById("calendarGrid").innerHTML = cells.join("");
+    }
+
+    function renderDayDetail(dateKey) {
+      const box = document.getElementById("dayDetail");
+      const e = state.entries[dateKey];
+      if (!e) {
+        box.innerHTML = `<strong>${dateKey}</strong><p class="hint">この日の記録はまだありません。</p>`;
+      } else {
+        box.innerHTML = `
+          <strong>${dateKey} ${moodMeta(e.mood).emoji} ${moodMeta(e.mood).label}</strong>
+          <p>活動: ${(e.activities || []).join("、") || "なし"}</p>
+          <p>体調: ${(e.conditions || []).join("、") || "なし"}</p>
+          ${e.run ? `<p>ランニング: ${e.run.distance || 0}km / ${e.run.time || 0}分 / ${e.run.condition || "未入力"}</p>` : ""}
+          ${e.memo ? `<p>${escapeHtml(e.memo)}</p>` : ""}
+          ${e.photo ? `<img class="entry-photo" src="${e.photo}" alt="添付写真">` : ""}
+        `;
+      }
+      box.classList.add("active");
+    }
+
+    function createSummary() {
+      const now = new Date();
+      const monthEntries = Object.values(state.entries).filter(e => {
+        const d = parseDate(e.date);
+        return d.getFullYear() === now.getFullYear() && d.getMonth() === now.getMonth();
+      });
+      if (!monthEntries.length) {
+        document.getElementById("summaryBox").textContent = "今月はまだ記録がありません。最初の1日を保存してみましょう。";
+        return;
+      }
+      const avg = average(monthEntries.map(e => e.mood));
+      const best = topCount(monthEntries.flatMap(e => e.activities || []));
+      const body = topCount(monthEntries.flatMap(e => e.conditions || []));
+      const runs = monthEntries.filter(e => e.run);
+      const km = runs.reduce((sum, e) => sum + Number(e.run.distance || 0), 0);
+      document.getElementById("summaryBox").textContent =
+        `今月は${monthEntries.length}日記録できています。平均気分は${avg.toFixed(1)}で、よく出た活動は「${best || "まだ少なめ"}」。体調では「${body || "大きな偏りなし"}」が目立ちます。ランニングは${runs.length}回、合計${km.toFixed(1)}km。来月も、気分が上がる活動を小さく続ける流れが合いそうです。`;
+    }
+
+    function topCount(items) {
+      const map = new Map();
+      items.forEach(item => map.set(item, (map.get(item) || 0) + 1));
+      return [...map.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "";
+    }
+
+    function saveToday() {
+      draft.memo = document.getElementById("memo").value.trim();
+      if (draft.activities.includes("ランニング")) {
+        draft.run = {
+          distance: document.getElementById("runDistance").value,
+          time: document.getElementById("runTime").value,
+          condition: document.getElementById("runCondition").value
+        };
+      } else {
+        draft.run = null;
+      }
+      state.entries[today] = { ...draft, date: today };
+      persist();
+      renderAll();
+      showToast("保存しました");
+    }
+
+    function download(filename, content, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      a.click();
+      URL.revokeObjectURL(url);
+    }
+
+    function exportCsv() {
+      const rows = [["date","mood","moodLabel","activities","conditions","memo","runDistanceKm","runTimeMin","runCondition","hasPhoto"]];
+      Object.values(state.entries).sort((a, b) => a.date.localeCompare(b.date)).forEach(e => {
+        rows.push([
+          e.date, e.mood, moodMeta(e.mood).label, (e.activities || []).join("|"),
+          (e.conditions || []).join("|"), e.memo || "", e.run?.distance || "",
+          e.run?.time || "", e.run?.condition || "", e.photo ? "yes" : "no"
+        ]);
+      });
+      download(`mellow-log-${today}.csv`, rows.map(row => row.map(csvCell).join(",")).join("\n"), "text/csv;charset=utf-8");
+    }
+
+    function csvCell(value) {
+      return `"${String(value).replaceAll('"', '""')}"`;
+    }
+
+    function importData(file) {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const text = String(reader.result || "");
+        try {
+          if (file.name.endsWith(".json")) {
+            const imported = JSON.parse(text);
+            state.activities = [...new Set([...(imported.activities || []), ...state.activities])];
+            state.entries = { ...state.entries, ...(imported.entries || {}) };
+          } else {
+            parseCsv(text).forEach(row => {
+              if (!row.date) return;
+              state.entries[row.date] = {
+                date: row.date,
+                mood: Number(row.mood || 3),
+                activities: splitList(row.activities),
+                conditions: splitList(row.conditions),
+                memo: row.memo || "",
+                photo: "",
+                run: row.runDistanceKm || row.runTimeMin || row.runCondition ? {
+                  distance: row.runDistanceKm || "",
+                  time: row.runTimeMin || "",
+                  condition: row.runCondition || ""
+                } : null
+              };
+            });
+          }
+          persist();
+          draft = state.entries[today] || freshEntry();
+          renderAll();
+          showToast("インポートしました");
+        } catch {
+          showToast("読み込みできませんでした");
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function splitList(value) {
+      return String(value || "").split("|").map(s => s.trim()).filter(Boolean);
+    }
+
+    function parseCsv(text) {
+      const lines = text.trim().split(/\r?\n/);
+      const headers = parseCsvLine(lines.shift() || "");
+      return lines.map(line => {
+        const values = parseCsvLine(line);
+        return Object.fromEntries(headers.map((h, i) => [h, values[i] || ""]));
+      });
+    }
+
+    function parseCsvLine(line) {
+      const out = [];
+      let cell = "";
+      let quoted = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"' && line[i + 1] === '"') {
+          cell += '"';
+          i++;
+        } else if (ch === '"') {
+          quoted = !quoted;
+        } else if (ch === "," && !quoted) {
+          out.push(cell);
+          cell = "";
+        } else {
+          cell += ch;
+        }
+      }
+      out.push(cell);
+      return out;
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, ch => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#039;" }[ch]));
+    }
+
+    document.addEventListener("click", event => {
+      const mood = event.target.closest("[data-mood]");
+      if (mood) {
+        draft.mood = Number(mood.dataset.mood);
+        renderMoodButtons();
+      }
+      const activity = event.target.closest("[data-activity]");
+      if (activity) {
+        const name = activity.dataset.activity;
+        draft.activities = draft.activities.includes(name) ? draft.activities.filter(a => a !== name) : [...draft.activities, name];
+        renderActivityChips();
+      }
+      const condition = event.target.closest("[data-condition]");
+      if (condition) {
+        const name = condition.dataset.condition;
+        draft.conditions = draft.conditions.includes(name) ? draft.conditions.filter(c => c !== name) : [...draft.conditions, name];
+        renderConditionChips();
+      }
+      const nav = event.target.closest("[data-screen]");
+      if (nav) {
+        document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b === nav));
+        document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === `screen-${nav.dataset.screen}`));
+        if (nav.dataset.screen === "analysis") renderAnalysis();
+        if (nav.dataset.screen === "calendar") renderCalendar();
+      }
+      const range = event.target.closest("[data-range]");
+      if (range) {
+        analysisRange = range.dataset.range;
+        document.querySelectorAll("[data-range]").forEach(b => b.classList.toggle("active", b === range));
+        renderAnalysis();
+      }
+      const day = event.target.closest("[data-date]");
+      if (day) renderDayDetail(day.dataset.date);
+      const deleteBtn = event.target.closest(".delete-activity");
+      if (deleteBtn) {
+        const index = Number(deleteBtn.dataset.index);
+        const name = state.activities[index];
+        state.activities.splice(index, 1);
+        draft.activities = draft.activities.filter(a => a !== name);
+        Object.values(state.entries).forEach(e => e.activities = (e.activities || []).filter(a => a !== name));
+        persist();
+        renderAll();
+      }
+    });
+
+    document.getElementById("saveBtn").addEventListener("click", saveToday);
+    document.getElementById("summaryBtn").addEventListener("click", createSummary);
+    document.getElementById("themeBtn").addEventListener("click", () => {
+      state.theme = state.theme === "dark" ? "light" : "dark";
+      persist();
+      renderAll();
+    });
+    document.getElementById("quickAddActivity").addEventListener("click", () => {
+      const name = prompt("追加する活動名");
+      if (!name) return;
+      state.activities.push(name.trim());
+      state.activities = [...new Set(state.activities.filter(Boolean))];
+      persist();
+      renderAll();
+    });
+    document.getElementById("addActivityBtn").addEventListener("click", () => {
+      const input = document.getElementById("newActivityName");
+      if (!input.value.trim()) return;
+      state.activities = [...new Set([...state.activities, input.value.trim()])];
+      input.value = "";
+      persist();
+      renderAll();
+    });
+    document.getElementById("activityEditor").addEventListener("input", event => {
+      if (!event.target.classList.contains("activity-name")) return;
+      const index = Number(event.target.dataset.index);
+      const oldName = state.activities[index];
+      const newName = event.target.value.trim();
+      if (!newName) return;
+      state.activities[index] = newName;
+      Object.values(state.entries).forEach(e => {
+        e.activities = (e.activities || []).map(a => a === oldName ? newName : a);
+      });
+      draft.activities = draft.activities.map(a => a === oldName ? newName : a);
+      persist();
+      renderActivityChips();
+    });
+    document.getElementById("memo").addEventListener("input", event => draft.memo = event.target.value);
+    document.getElementById("photoInput").addEventListener("change", event => {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = () => {
+        draft.photo = reader.result;
+        renderDraftFields();
+      };
+      reader.readAsDataURL(file);
+    });
+    document.getElementById("prevMonth").addEventListener("click", () => {
+      calendarCursor.setMonth(calendarCursor.getMonth() - 1);
+      renderCalendar();
+    });
+    document.getElementById("nextMonth").addEventListener("click", () => {
+      calendarCursor.setMonth(calendarCursor.getMonth() + 1);
+      renderCalendar();
+    });
+    document.getElementById("exportCsv").addEventListener("click", exportCsv);
+    document.getElementById("exportJson").addEventListener("click", () => {
+      download(`mellow-log-backup-${today}.json`, JSON.stringify(state, null, 2), "application/json");
+    });
+    document.getElementById("importFile").addEventListener("change", event => {
+      const file = event.target.files[0];
+      if (file) importData(file);
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>

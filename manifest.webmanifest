@@ -1,0 +1,11 @@
+{
+  "name": "Mellow Log",
+  "short_name": "Mellow Log",
+  "description": "毎日数秒で記録できるライフログアプリ",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#fff3f7",
+  "theme_color": "#fff3f7",
+  "lang": "ja"
+}
