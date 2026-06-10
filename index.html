@@ -146,20 +146,23 @@
     }
 
     .mood {
-      min-height: 78px;
+      height: 112px;
       border-radius: 8px;
       background: var(--paper-2);
       border: 2px solid transparent;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 7px;
+      display: block;
+      overflow: hidden;
+      padding: 0;
       transition: transform .15s ease, border-color .15s ease;
     }
 
-    .mood span:first-child { font-size: 26px; }
-    .mood span:last-child { font-size: 10px; color: var(--muted); }
+    .mood img {
+      width: 100%;
+      height: 100%;
+      display: block;
+      object-fit: cover;
+    }
+
     .mood.selected {
       border-color: var(--accent);
       background: color-mix(in srgb, var(--accent) 15%, var(--paper));
@@ -353,6 +356,12 @@
     .day.has { border-color: var(--line); background: var(--paper); }
     .day.today { border-color: var(--accent); }
     .day .emoji { font-size: 18px; line-height: 1; }
+    .day .mood-mini {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      object-fit: cover;
+    }
     .day.blank { visibility: hidden; }
 
     .detail {
@@ -437,8 +446,7 @@
 
     @media (max-width: 360px) {
       .app { padding-left: 12px; padding-right: 12px; }
-      .mood { min-height: 72px; }
-      .mood span:last-child { font-size: 9px; }
+      .mood { height: 98px; }
       .chip { font-size: 13px; padding: 8px 10px; }
     }
   </style>
@@ -587,14 +595,14 @@
   <script>
     const STORAGE_KEY = "mellow-log-v1";
     const moodScale = [
-      { value: 5, label: "とても良い", emoji: "☀️" },
-      { value: 4, label: "良い", emoji: "🌷" },
-      { value: 3, label: "普通", emoji: "🌿" },
-      { value: 2, label: "悪い", emoji: "☁️" },
-      { value: 1, label: "とても悪い", emoji: "🌧️" }
+      { value: 5, label: "とても良い", icon: "assets/moods/01saikou.png" },
+      { value: 4, label: "良い", icon: "assets/moods/02yoi.png" },
+      { value: 3, label: "普通", icon: "assets/moods/03futu.png" },
+      { value: 2, label: "悪い", icon: "assets/moods/04waru.png" },
+      { value: 1, label: "とても悪い", icon: "assets/moods/05saite.png" }
     ];
     const defaultActivities = ["仕事","家事","育児","買い物","散歩","運動","ランニング","勉強","趣味","外食","旅行","友人","睡眠不足","飲酒","病院"];
-    const conditions = ["元気","疲労","頭痛","腹痛","肩こり","腰痛","風邪気味","アレルギー"];
+    const conditions = ["元気","普通","疲労感","めまい","頭痛","胃痛","腹痛","だるさ"];
     const state = loadState();
     const today = toDateKey(new Date());
     let draft = state.entries[today] || freshEntry();
@@ -664,7 +672,7 @@
     function renderMoodButtons() {
       document.getElementById("moodButtons").innerHTML = moodScale.map(m => `
         <button class="mood ${draft.mood === m.value ? "selected" : ""}" data-mood="${m.value}" type="button">
-          <span>${m.emoji}</span><span>${m.label}</span>
+          <img src="${m.icon}" alt="${m.label}">
         </button>
       `).join("");
     }
@@ -797,7 +805,7 @@
         const runAvg = average(running.map(e => e.mood));
         insights.push(`ランニング実施回数は${running.length}回、平均気分は${runAvg.toFixed(1)}です。走った日は気分が${runAvg >= allAvg ? "高め" : "落ち着きにくい"}傾向があります。`);
       }
-      const conditionHit = ["疲労","頭痛","腹痛","肩こり","腰痛"].find(c => entries.filter(e => e.conditions?.includes(c)).length >= 1);
+      const conditionHit = ["疲労感","めまい","頭痛","胃痛","腹痛","だるさ"].find(c => entries.filter(e => e.conditions?.includes(c)).length >= 1);
       if (conditionHit) {
         const related = topRelatedActivity(entries, conditionHit);
         if (related) insights.push(`${conditionHit}の日は「${related}」も一緒に記録されやすいです。予定量の見直しに使えます。`);
@@ -827,7 +835,7 @@
         const entry = state.entries[key];
         cells.push(`
           <button class="day ${entry ? "has" : ""} ${key === today ? "today" : ""}" data-date="${key}" type="button">
-            <span>${day}</span><span class="emoji">${entry ? moodMeta(entry.mood).emoji : ""}</span>
+            <span>${day}</span>${entry ? `<img class="mood-mini" src="${moodMeta(entry.mood).icon}" alt="${moodMeta(entry.mood).label}">` : '<span></span>'}
           </button>
         `);
       }
@@ -841,7 +849,7 @@
         box.innerHTML = `<strong>${dateKey}</strong><p class="hint">この日の記録はまだありません。</p>`;
       } else {
         box.innerHTML = `
-          <strong>${dateKey} ${moodMeta(e.mood).emoji} ${moodMeta(e.mood).label}</strong>
+          <strong>${dateKey} ${moodMeta(e.mood).label}</strong>
           <p>活動: ${(e.activities || []).join("、") || "なし"}</p>
           <p>体調: ${(e.conditions || []).join("、") || "なし"}</p>
           ${e.run ? `<p>ランニング: ${e.run.distance || 0}km / ${e.run.time || 0}分 / ${e.run.condition || "未入力"}</p>` : ""}

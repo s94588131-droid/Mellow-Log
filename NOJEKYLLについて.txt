@@ -1,0 +1,7 @@
+このフォルダには .nojekyll というGitHub Pages用ファイルも入っています。
+
+.nojekyll は先頭がドットのため、MacのFinderでは隠しファイルとして表示されないことがあります。
+Finderで Command + Shift + . を押すと表示できます。
+
+GitHub Pagesでは .nojekyll があると、Jekyll処理を使わずにこの静的アプリをそのまま公開できます。
+今回のアプリでは必須ではありませんが、入れておいて問題ありません。
