@@ -146,21 +146,33 @@
     }
 
     .mood {
-      height: 112px;
+      height: 90px;
       border-radius: 8px;
       background: var(--paper-2);
       border: 2px solid transparent;
-      display: block;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 5px;
       overflow: hidden;
-      padding: 0;
+      padding: 8px 4px 7px;
       transition: transform .15s ease, border-color .15s ease;
     }
 
     .mood img {
-      width: 100%;
-      height: 100%;
+      width: 48px;
+      height: 48px;
       display: block;
-      object-fit: cover;
+      object-fit: contain;
+      border-radius: 50%;
+    }
+
+    .mood-label {
+      color: var(--ink);
+      font-size: 11px;
+      line-height: 1;
+      white-space: nowrap;
     }
 
     .mood.selected {
@@ -446,7 +458,9 @@
 
     @media (max-width: 360px) {
       .app { padding-left: 12px; padding-right: 12px; }
-      .mood { height: 98px; }
+      .mood { height: 84px; padding-inline: 2px; }
+      .mood img { width: 43px; height: 43px; }
+      .mood-label { font-size: 10px; }
       .chip { font-size: 13px; padding: 8px 10px; }
     }
   </style>
@@ -595,11 +609,11 @@
   <script>
     const STORAGE_KEY = "mellow-log-v1";
     const moodScale = [
-      { value: 5, label: "とても良い", icon: "assets/moods/01saikou.png" },
+      { value: 5, label: "最高", icon: "assets/moods/01saiko.png" },
       { value: 4, label: "良い", icon: "assets/moods/02yoi.png" },
       { value: 3, label: "普通", icon: "assets/moods/03futu.png" },
       { value: 2, label: "悪い", icon: "assets/moods/04waru.png" },
-      { value: 1, label: "とても悪い", icon: "assets/moods/05saite.png" }
+      { value: 1, label: "最悪", icon: "assets/moods/05saia.png" }
     ];
     const defaultActivities = ["仕事","家事","育児","買い物","散歩","運動","ランニング","勉強","趣味","外食","旅行","友人","睡眠不足","飲酒","病院"];
     const conditions = ["元気","普通","疲労感","めまい","頭痛","胃痛","腹痛","だるさ"];
@@ -673,6 +687,7 @@
       document.getElementById("moodButtons").innerHTML = moodScale.map(m => `
         <button class="mood ${draft.mood === m.value ? "selected" : ""}" data-mood="${m.value}" type="button">
           <img src="${m.icon}" alt="${m.label}">
+          <span class="mood-label">${m.label}</span>
         </button>
       `).join("");
     }
