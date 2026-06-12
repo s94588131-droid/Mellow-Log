@@ -367,6 +367,11 @@
 
     .day.has { border-color: var(--line); background: var(--paper); }
     .day.today { border-color: var(--accent); }
+    .day.selected {
+      border-color: var(--accent-3);
+      background: color-mix(in srgb, var(--accent-3) 18%, var(--paper));
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-3) 18%, transparent);
+    }
     .day .emoji { font-size: 18px; line-height: 1; }
     .day .mood-mini {
       width: 24px;
@@ -620,6 +625,7 @@
     const state = loadState();
     const today = toDateKey(new Date());
     let selectedDate = today;
+    let selectedCalendarDate = today;
     let draft = cloneEntry(state.entries[selectedDate] || freshEntry(selectedDate));
     let analysisRange = "week";
     let calendarCursor = new Date();
@@ -865,7 +871,7 @@
         const key = toDateKey(new Date(y, m, day));
         const entry = state.entries[key];
         cells.push(`
-          <button class="day ${entry ? "has" : ""} ${key === today ? "today" : ""}" data-date="${key}" type="button">
+          <button class="day ${entry ? "has" : ""} ${key === today ? "today" : ""} ${key === selectedCalendarDate ? "selected" : ""}" data-date="${key}" type="button">
             <span>${day}</span>${entry ? `<img class="mood-mini" src="${moodMeta(entry.mood).icon}" alt="${moodMeta(entry.mood).label}">` : '<span></span>'}
           </button>
         `);
@@ -930,6 +936,7 @@
 
     function setDraftDate(dateKey) {
       selectedDate = dateKey;
+      selectedCalendarDate = dateKey;
       draft = cloneEntry(state.entries[dateKey] || freshEntry(dateKey));
       renderAll();
       setActiveScreen("log");
@@ -1126,7 +1133,11 @@
         return;
       }
       const day = event.target.closest("[data-date]");
-      if (day) renderDayDetail(day.dataset.date);
+      if (day) {
+        selectedCalendarDate = day.dataset.date;
+        renderCalendar();
+        renderDayDetail(day.dataset.date);
+      }
       const deleteBtn = event.target.closest(".delete-activity");
       if (deleteBtn) {
         const index = Number(deleteBtn.dataset.index);
