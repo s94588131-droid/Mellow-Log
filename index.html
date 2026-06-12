@@ -267,6 +267,13 @@
 
     .photo-preview.active { display: block; }
 
+    .photo-actions {
+      display: none;
+      margin-top: 10px;
+    }
+
+    .photo-actions.active { display: block; }
+
     .stats {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -530,6 +537,9 @@
         <div style="height:10px"></div>
         <input class="field" id="photoInput" type="file" accept="image/*">
         <img class="photo-preview" id="photoPreview" alt="添付写真プレビュー">
+        <div class="photo-actions" id="photoActions">
+          <button class="secondary" id="removePhotoBtn" type="button">写真を削除</button>
+        </div>
       </div>
 
       <button class="primary" id="saveBtn" type="button">今日を保存</button>
@@ -735,6 +745,7 @@
       const preview = document.getElementById("photoPreview");
       preview.src = draft.photo || "";
       preview.classList.toggle("active", Boolean(draft.photo));
+      document.getElementById("photoActions").classList.toggle("active", Boolean(draft.photo));
     }
 
     function renderActivityEditor() {
@@ -1199,6 +1210,11 @@
       } catch {
         showToast("写真を読み込めませんでした");
       }
+    });
+    document.getElementById("removePhotoBtn").addEventListener("click", () => {
+      draft.photo = "";
+      renderDraftFields();
+      showToast("写真を削除しました");
     });
     document.getElementById("prevMonth").addEventListener("click", () => {
       calendarCursor.setMonth(calendarCursor.getMonth() - 1);
