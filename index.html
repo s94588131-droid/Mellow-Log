@@ -470,7 +470,7 @@
     <header>
       <div>
         <h1>Mellow Log</h1>
-        <div class="date-pill"><span>今日</span><strong id="todayLabel"></strong></div>
+        <div class="date-pill"><span>記録日</span><strong id="todayLabel"></strong></div>
       </div>
       <button class="icon-btn" id="themeBtn" type="button" aria-label="テーマ切替">☾</button>
     </header>
@@ -619,12 +619,17 @@
     const conditions = ["元気","普通","疲労感","めまい","頭痛","胃痛","腹痛","だるさ"];
     const state = loadState();
     const today = toDateKey(new Date());
-    let draft = state.entries[today] || freshEntry();
+    let selectedDate = today;
+    let draft = cloneEntry(state.entries[selectedDate] || freshEntry(selectedDate));
     let analysisRange = "week";
     let calendarCursor = new Date();
 
-    function freshEntry() {
-      return { date: today, mood: 3, activities: [], conditions: [], memo: "", photo: "", run: null };
+    function freshEntry(dateKey = selectedDate) {
+      return { date: dateKey, mood: 3, activities: [], conditions: [], memo: "", photo: "", run: null };
+    }
+
+    function cloneEntry(entry) {
+      return JSON.parse(JSON.stringify(entry));
     }
 
     function loadState() {
@@ -643,7 +648,12 @@
     }
 
     function persist() {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+        return true;
+      } catch {
+        return false;
+      }
     }
 
     function toDateKey(date) {
@@ -656,6 +666,10 @@
     function parseDate(key) {
       const [y, m, d] = key.split("-").map(Number);
       return new Date(y, m - 1, d);
+    }
+
+    function formatDisplayDate(dateKey) {
+      return new Intl.DateTimeFormat("ja-JP", { month: "long", day: "numeric", weekday: "short" }).format(parseDate(dateKey));
     }
 
     function moodMeta(value) {
@@ -673,7 +687,8 @@
     function renderAll() {
       document.documentElement.dataset.theme = state.theme;
       document.getElementById("themeBtn").textContent = state.theme === "dark" ? "☀" : "☾";
-      document.getElementById("todayLabel").textContent = new Intl.DateTimeFormat("ja-JP", { month: "long", day: "numeric", weekday: "short" }).format(new Date());
+      document.getElementById("todayLabel").textContent = formatDisplayDate(selectedDate);
+      document.getElementById("saveBtn").textContent = selectedDate === today ? "今日を保存" : "この日を保存";
       renderMoodButtons();
       renderActivityChips();
       renderConditionChips();
@@ -710,6 +725,7 @@
       document.getElementById("runDistance").value = draft.run?.distance || "";
       document.getElementById("runTime").value = draft.run?.time || "";
       document.getElementById("runCondition").value = draft.run?.condition || "";
+      document.getElementById("photoInput").value = "";
       const preview = document.getElementById("photoPreview");
       preview.src = draft.photo || "";
       preview.classList.toggle("active", Boolean(draft.photo));
@@ -861,7 +877,11 @@
       const box = document.getElementById("dayDetail");
       const e = state.entries[dateKey];
       if (!e) {
-        box.innerHTML = `<strong>${dateKey}</strong><p class="hint">この日の記録はまだありません。</p>`;
+        box.innerHTML = `
+          <strong>${dateKey}</strong>
+          <p class="hint">この日の記録はまだありません。</p>
+          <button class="primary" data-edit-date="${dateKey}" type="button" style="margin-top:12px">この日に記録する</button>
+        `;
       } else {
         box.innerHTML = `
           <strong>${dateKey} ${moodMeta(e.mood).label}</strong>
@@ -870,6 +890,7 @@
           ${e.run ? `<p>ランニング: ${e.run.distance || 0}km / ${e.run.time || 0}分 / ${e.run.condition || "未入力"}</p>` : ""}
           ${e.memo ? `<p>${escapeHtml(e.memo)}</p>` : ""}
           ${e.photo ? `<img class="entry-photo" src="${e.photo}" alt="添付写真">` : ""}
+          <button class="primary" data-edit-date="${dateKey}" type="button" style="margin-top:12px">この記録を編集</button>
         `;
       }
       box.classList.add("active");
@@ -900,7 +921,22 @@
       return [...map.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] || "";
     }
 
-    function saveToday() {
+    function setActiveScreen(screenName) {
+      document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b.dataset.screen === screenName));
+      document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === `screen-${screenName}`));
+      if (screenName === "analysis") renderAnalysis();
+      if (screenName === "calendar") renderCalendar();
+    }
+
+    function setDraftDate(dateKey) {
+      selectedDate = dateKey;
+      draft = cloneEntry(state.entries[dateKey] || freshEntry(dateKey));
+      renderAll();
+      setActiveScreen("log");
+      showToast(`${formatDisplayDate(dateKey)}を編集中`);
+    }
+
+    function saveSelectedDate() {
       draft.memo = document.getElementById("memo").value.trim();
       if (draft.activities.includes("ランニング")) {
         draft.run = {
@@ -911,10 +947,46 @@
       } else {
         draft.run = null;
       }
-      state.entries[today] = { ...draft, date: today };
-      persist();
+      const previousEntry = state.entries[selectedDate] ? cloneEntry(state.entries[selectedDate]) : null;
+      state.entries[selectedDate] = { ...draft, date: selectedDate };
+      if (!persist()) {
+        if (previousEntry) {
+          state.entries[selectedDate] = previousEntry;
+        } else {
+          delete state.entries[selectedDate];
+        }
+        showToast("保存容量が足りません。写真を小さくするか外してください");
+        return;
+      }
       renderAll();
       showToast("保存しました");
+    }
+
+    function compressImageFile(file) {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onerror = () => reject(new Error("file-read"));
+        reader.onload = () => {
+          const img = new Image();
+          img.onerror = () => resolve(reader.result);
+          img.onload = () => {
+            const maxSide = 1200;
+            const scale = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+            const width = Math.max(1, Math.round(img.naturalWidth * scale));
+            const height = Math.max(1, Math.round(img.naturalHeight * scale));
+            const canvas = document.createElement("canvas");
+            canvas.width = width;
+            canvas.height = height;
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#fff";
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+            resolve(canvas.toDataURL("image/jpeg", 0.82));
+          };
+          img.src = reader.result;
+        };
+        reader.readAsDataURL(file);
+      });
     }
 
     function download(filename, content, type) {
@@ -971,7 +1043,7 @@
             });
           }
           persist();
-          draft = state.entries[today] || freshEntry();
+          draft = cloneEntry(state.entries[selectedDate] || freshEntry(selectedDate));
           renderAll();
           showToast("インポートしました");
         } catch {
@@ -1040,16 +1112,18 @@
       }
       const nav = event.target.closest("[data-screen]");
       if (nav) {
-        document.querySelectorAll(".nav-btn").forEach(b => b.classList.toggle("active", b === nav));
-        document.querySelectorAll(".screen").forEach(s => s.classList.toggle("active", s.id === `screen-${nav.dataset.screen}`));
-        if (nav.dataset.screen === "analysis") renderAnalysis();
-        if (nav.dataset.screen === "calendar") renderCalendar();
+        setActiveScreen(nav.dataset.screen);
       }
       const range = event.target.closest("[data-range]");
       if (range) {
         analysisRange = range.dataset.range;
         document.querySelectorAll("[data-range]").forEach(b => b.classList.toggle("active", b === range));
         renderAnalysis();
+      }
+      const editDate = event.target.closest("[data-edit-date]");
+      if (editDate) {
+        setDraftDate(editDate.dataset.editDate);
+        return;
       }
       const day = event.target.closest("[data-date]");
       if (day) renderDayDetail(day.dataset.date);
@@ -1065,7 +1139,7 @@
       }
     });
 
-    document.getElementById("saveBtn").addEventListener("click", saveToday);
+    document.getElementById("saveBtn").addEventListener("click", saveSelectedDate);
     document.getElementById("summaryBtn").addEventListener("click", createSummary);
     document.getElementById("themeBtn").addEventListener("click", () => {
       state.theme = state.theme === "dark" ? "light" : "dark";
@@ -1103,15 +1177,17 @@
       renderActivityChips();
     });
     document.getElementById("memo").addEventListener("input", event => draft.memo = event.target.value);
-    document.getElementById("photoInput").addEventListener("change", event => {
+    document.getElementById("photoInput").addEventListener("change", async event => {
       const file = event.target.files[0];
       if (!file) return;
-      const reader = new FileReader();
-      reader.onload = () => {
-        draft.photo = reader.result;
+      showToast("写真を準備中です");
+      try {
+        draft.photo = await compressImageFile(file);
         renderDraftFields();
-      };
-      reader.readAsDataURL(file);
+        showToast("写真を保存用に準備しました");
+      } catch {
+        showToast("写真を読み込めませんでした");
+      }
     });
     document.getElementById("prevMonth").addEventListener("click", () => {
       calendarCursor.setMonth(calendarCursor.getMonth() - 1);
